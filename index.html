@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recherche de Séries TV</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+    <style>
+      .show {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.show img {
+    border-radius: 10px;
+    max-width: 150px;
+    width: 100%;
+    object-fit: cover; 
+}
+
+.show-info {
+    flex: 1;
+}
+
+    </style>
+    
+</head>
+<body>
+    <div id="app">
+        <h1>Recherche de Séries TV</h1>
+        <input type="text" id="searchInput" placeholder="Rechercher une série">
+        <div id="results"></div>
+    </div>
+    <script>
+        // quand la page se charge
+        document.addEventListener("DOMContentLoaded", () => {
+            // input search pour recup la data
+            const searchInput = document.getElementById("searchInput");
+            // div result
+            const resultsDiv = document.getElementById("results");
+
+            let timeoutId;
+
+
+            const searchShows = async (query) => {
+                if (!query) {
+                    resultsDiv.innerHTML = "";
+                    return;
+                }
+
+                try {
+
+                    const response = await fetch(`https://api.tvmaze.com/search/shows?q=${query}`);
+                    const data = await response.json();
+                    displayResults(data);
+                } catch (error) {
+                    console.error("Erreur lors de la recherche des séries :", error);
+                    resultsDiv.innerHTML = `<p>Une erreur est survenue. Veuillez réessayer.</p>`;
+                }
+            };
+
+            // Fonction pour afficher les résultats
+            const displayResults = (shows) => {
+                resultsDiv.innerHTML = ""; 
+
+                if (shows.length === 0) {
+                    resultsDiv.innerHTML = `<p>Aucune série trouvée.</p>`;
+                    return;
+                }
+
+                // creation de la div 
+                shows.forEach((showItem) => {
+                    const show = showItem.show;
+                    const showDiv = document.createElement("div");
+                    showDiv.classList.add("show");
+
+                    // Remplissage du div pour chaque série
+                    showDiv.innerHTML = `
+                        ${show.image ? `<img src="${show.image.medium}" alt="${show.name}">` : ""}
+                        <div class="show-info">
+                            <h3><a href="${show.url}" target="_blank">${show.name}</a></h3>
+                            <p><strong>Genres :</strong> ${show.genres.join(", ")}</p>
+                            <p><strong>Statut :</strong> ${show.status}</p>
+                            <p class="rating"><strong>Note :</strong> ${show.rating.average ? `${show.rating.average}/10` : "N/A"}</p>
+                            <div class="summary">${show.summary ? show.summary : "Pas de description disponible."}</div>
+                        </div>
+                    `;
+
+                    resultsDiv.appendChild(showDiv);
+                });
+            };
+
+            // Event listener pour l'entrée de texte dans le champ de recherche
+            searchInput.addEventListener("input", () => {
+                clearTimeout(timeoutId); // Efface le précédent timeout pour éviter de faire trop de requêtes
+                const query = searchInput.value.trim();
+
+                // Délai avant de lancer la recherche (300 ms après avoir arrêté de taper)
+                timeoutId = setTimeout(() => {
+                    searchShows(query);
+                }, 300);
+            });
+        });
+    </script>
+</body>
+</html>
